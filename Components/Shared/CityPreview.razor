@@ -1,0 +1,33 @@
+<section class="city-preview" aria-label="תצוגה לדוגמה של פנייה עירונית">
+    <div class="preview-heading">
+        <span class="example-badge">תצוגה לדוגמה</span>
+        <strong>@(Register ? "העיר שלכם, בתמונה אחת" : "העיר שלך, בתמונה אחת")</strong>
+    </div>
+    <div class="city-map">
+        <img class="map-art" src="@MapAsset" alt="מפת רחובות מאוירת" />
+        <img class="map-pin pin-one" src="@PinPrimary" alt="" />
+        <img class="map-pin pin-two" src="@PinSecondary" alt="" />
+        <img class="map-pin pin-three" src="@PinSecondary" alt="" />
+        <span class="park-label">גן העיר</span>
+    </div>
+    <div class="sample-report" dir="rtl">
+        <div class="report-heading">
+            <strong>תאורת רחוב לא תקינה</strong>
+            <span class="status-badge">בטיפול</span>
+        </div>
+        <p>רחוב הגפן 12&nbsp; • &nbsp;פנייה #1042</p>
+        <div class="report-progress">
+            <span>הפנייה התקבלה</span><span class="progress-arrow">←</span>
+            <span class="active-step">בטיפול המחלקה</span><span class="progress-arrow">←</span>
+            <span>טופלה</span>
+        </div>
+    </div>
+</section>
+
+@code {
+    [Parameter] public bool Register { get; set; }
+
+    private string MapAsset => Register ? "/assets/map-register.svg" : "/assets/map-landing.svg";
+    private string PinPrimary => Register ? "/assets/register-pin-primary.svg" : "/assets/pin-primary.svg";
+    private string PinSecondary => Register ? "/assets/register-pin-secondary.svg" : "/assets/pin-secondary.svg";
+}

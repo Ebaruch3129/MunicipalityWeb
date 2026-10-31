@@ -1,0 +1,100 @@
+@page "/signin"
+@inject MunicipalityWeb.Services.UsersApiClient UsersApi
+
+<PageTitle>התחברות | עיר בקשר</PageTitle>
+<SiteHeader />
+
+<main class="auth-content sign-in-content" dir="rtl">
+    <div class="sign-in-layout">
+        <section class="auth-intro">
+            <h1>התחברות לעיר בקשר</h1>
+            <p>היכנסו לחשבון שלכם כדי לדווח, לעקוב אחר פניות ולהמשיך להשפיע על הסביבה שלכם.</p>
+        </section>
+
+        <section class="auth-card sign-in-card">
+            <div class="card-heading">
+                <h2>התחברות</h2>
+                <p>הזינו את המייל והסיסמה שלכם כדי להמשיך לעבוד עם החשבון שלכם.</p>
+            </div>
+
+            <EditForm Model="Form" OnValidSubmit="SubmitAsync" class="auth-form">
+                <DataAnnotationsValidator />
+                <div class="form-field">
+                    <label for="signin-email">כתובת מייל</label>
+                    <InputText id="signin-email" @bind-Value="Form.Email" type="email" autocomplete="email" placeholder="name@example.com" dir="ltr" />
+                    <ValidationMessage For="() => Form.Email" />
+                </div>
+                <div class="form-field">
+                    <label for="signin-password">סיסמה</label>
+                    <InputText id="signin-password" @bind-Value="Form.Password" type="password" autocomplete="current-password" placeholder="••••••••" dir="ltr" />
+                    <ValidationMessage For="() => Form.Password" />
+                </div>
+                <div class="form-options">
+                    <button type="button" class="text-action" @onclick="ShowResetNotice">שכחתי סיסמה</button>
+                    <label class="remember-option" for="remember-me">
+                        <input id="remember-me" type="checkbox" @bind="Form.RememberMe" />
+                        <span>זכור אותי</span>
+                    </label>
+                </div>
+                @if (!string.IsNullOrWhiteSpace(ResultMessage))
+                {
+                    <p class="form-result @(Succeeded ? "success" : "error")" role="status">@ResultMessage</p>
+                }
+                <button class="button button-primary submit-button" type="submit" disabled="@IsBusy">
+                    @(IsBusy ? "מתחברים…" : "התחברות")
+                </button>
+            </EditForm>
+        </section>
+
+        <div class="account-switch">
+            <span>עוד לא רשומים?</span>
+            <a class="button button-outline" href="/register">הרשמה למערכת</a>
+        </div>
+    </div>
+</main>
+
+@code {
+    private SignInForm Form { get; } = new();
+    private bool IsBusy;
+    private bool Succeeded;
+    private string? ResultMessage;
+
+    private async Task SubmitAsync()
+    {
+        IsBusy = true;
+        ResultMessage = null;
+        try
+        {
+            var result = await UsersApi.SignInAsync(Form.Email, Form.Password);
+            Succeeded = result.Succeeded;
+            ResultMessage = result.Message;
+        }
+        catch (HttpRequestException)
+        {
+            Succeeded = false;
+            ResultMessage = "לא הצלחנו להתחבר לשרת כרגע. בדקו שהשרת פועל ונסו שוב.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private void ShowResetNotice()
+    {
+        Succeeded = false;
+        ResultMessage = "אפשרות איפוס סיסמה עדיין אינה זמינה.";
+    }
+
+    private sealed class SignInForm
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "יש להזין כתובת מייל.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "כתובת המייל אינה תקינה.")]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "יש להזין סיסמה.")]
+        public string Password { get; set; } = string.Empty;
+
+        public bool RememberMe { get; set; }
+    }
+}

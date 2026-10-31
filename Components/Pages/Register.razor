@@ -1,0 +1,117 @@
+@page "/register"
+@inject MunicipalityWeb.Services.UsersApiClient UsersApi
+
+<PageTitle>הרשמה | עיר בקשר</PageTitle>
+<SiteHeader IsRegister="true" />
+
+<main class="registration-content" dir="rtl">
+    <section class="registration-intro">
+        <h1>הרשמה לעיר בקשר</h1>
+        <p>פתחו חשבון ותחילו לדווח, לעקוב אחר פניות ולהיות חלק מהשינוי בעיר שלכם.</p>
+    </section>
+
+    <div class="registration-layout" dir="ltr">
+        <CityPreview Register="true" />
+
+        <section class="auth-card registration-card" dir="rtl">
+            <div class="card-heading">
+                <h2>פתחו חשבון חדש</h2>
+                <p>מלאו את הפרטים והתחילו לדווח, לעקוב אחר פניות ולהיות חלק מהשינוי בעיר שלכם.</p>
+            </div>
+
+            <div class="register-switch">
+                <div>
+                    <strong>כבר יש לכם חשבון?</strong>
+                    <span>עברו להתחברות והמשיכו מהמקום שבו הפסקתם.</span>
+                </div>
+                <a class="button button-outline" href="/signin">התחברות</a>
+            </div>
+
+            <EditForm Model="Form" OnValidSubmit="SubmitAsync" class="auth-form registration-form">
+                <DataAnnotationsValidator />
+                <div class="form-field">
+                    <label for="register-name">שם מלא</label>
+                    <InputText id="register-name" @bind-Value="Form.FullName" autocomplete="name" placeholder="שם פרטי ושם משפחה" />
+                    <ValidationMessage For="() => Form.FullName" />
+                </div>
+                <div class="form-field">
+                    <label for="register-email">כתובת מייל</label>
+                    <InputText id="register-email" @bind-Value="Form.Email" type="email" autocomplete="email" placeholder="name@example.com" dir="ltr" />
+                    <ValidationMessage For="() => Form.Email" />
+                </div>
+                <div class="form-field">
+                    <label for="register-password">סיסמה</label>
+                    <InputText id="register-password" @bind-Value="Form.Password" type="password" autocomplete="new-password" placeholder="••••••••" dir="ltr" />
+                    <ValidationMessage For="() => Form.Password" />
+                </div>
+                <div class="form-field">
+                    <label for="register-confirm">אימות סיסמה</label>
+                    <InputText id="register-confirm" @bind-Value="Form.ConfirmPassword" type="password" autocomplete="new-password" placeholder="••••••••" dir="ltr" />
+                    <ValidationMessage For="() => Form.ConfirmPassword" />
+                </div>
+                @if (!string.IsNullOrWhiteSpace(ResultMessage))
+                {
+                    <p class="form-result @(Succeeded ? "success" : "error")" role="status">@ResultMessage</p>
+                }
+                <div class="form-actions">
+                    <button class="button button-primary submit-button" type="submit" disabled="@IsBusy">
+                        @(IsBusy ? "יוצרים חשבון…" : "יוצרים חשבון")
+                    </button>
+                    <p>על ידי הרשמה, אתם מסכימים לתנאי השימוש ולמדיניות הפרטיות של עיר בקשר.</p>
+                </div>
+            </EditForm>
+        </section>
+    </div>
+</main>
+
+@code {
+    private RegistrationForm Form { get; } = new();
+    private bool IsBusy;
+    private bool Succeeded;
+    private string? ResultMessage;
+
+    private async Task SubmitAsync()
+    {
+        if (Form.Password != Form.ConfirmPassword)
+        {
+            Succeeded = false;
+            ResultMessage = "הסיסמאות אינן תואמות. בדקו את שני השדות ונסו שוב.";
+            return;
+        }
+
+        IsBusy = true;
+        ResultMessage = null;
+        try
+        {
+            var result = await UsersApi.RegisterAsync(Form.Email, Form.Password);
+            Succeeded = result.Succeeded;
+            ResultMessage = result.Message;
+        }
+        catch (HttpRequestException)
+        {
+            Succeeded = false;
+            ResultMessage = "לא הצלחנו להתחבר לשרת כרגע. בדקו שהשרת פועל ונסו שוב.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private sealed class RegistrationForm
+    {
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "יש להזין שם מלא.")]
+        public string FullName { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "יש להזין כתובת מייל.")]
+        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "כתובת המייל אינה תקינה.")]
+        public string Email { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "יש להזין סיסמה.")]
+        [System.ComponentModel.DataAnnotations.MinLength(6, ErrorMessage = "הסיסמה צריכה להכיל לפחות 6 תווים.")]
+        public string Password { get; set; } = string.Empty;
+
+        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "יש לאמת את הסיסמה.")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+}

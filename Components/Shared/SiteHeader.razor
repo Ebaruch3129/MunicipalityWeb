@@ -1,0 +1,37 @@
+@inject NavigationManager Navigation
+
+<header class="site-header">
+    <div class="header-actions" dir="rtl">
+        @if (IsRegister)
+        {
+            <a class="button button-primary" href="/signin">התחברות</a>
+            <a class="button button-outline" href="/register">הרשמה למערכת</a>
+        }
+        else
+        {
+            <a class="button button-primary" href="/register">הרשמה למערכת</a>
+            <a class="button button-outline" href="/signin">התחברות</a>
+        }
+    </div>
+
+    <nav class="main-nav" aria-label="ניווט ראשי" dir="rtl">
+        <a href="/#audience">למי זה מתאים</a>
+        <a href="/#how-it-works">איך זה עובד</a>
+        <a href="/#capabilities">מה אפשר לעשות</a>
+    </nav>
+
+    <a class="brand" href="/" aria-label="עיר בקשר — דף הבית" dir="rtl">
+        <span>עיר בקשר</span>
+        <span class="brand-mark"><img src="@BrandAsset" alt="" /></span>
+    </a>
+</header>
+
+@code {
+    [Parameter] public bool IsRegister { get; set; }
+
+    private string BrandAsset => Navigation.Uri.Contains("/register", StringComparison.OrdinalIgnoreCase)
+        ? "/assets/brand-register.svg"
+        : Navigation.Uri.Contains("/signin", StringComparison.OrdinalIgnoreCase)
+            ? "/assets/brand-signin.svg"
+            : "/assets/brand-landing.svg";
+}
