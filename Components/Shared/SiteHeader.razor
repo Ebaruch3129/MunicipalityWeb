@@ -1,37 +1,51 @@
 @inject NavigationManager Navigation
 
-<header class="site-header">
-    <div class="header-actions" dir="rtl">
-        @if (IsRegister)
-        {
-            <a class="button button-primary" href="/signin">התחברות</a>
-            <a class="button button-outline" href="/register">הרשמה למערכת</a>
-        }
-        else
-        {
-            <a class="button button-primary" href="/register">הרשמה למערכת</a>
-            <a class="button button-outline" href="/signin">התחברות</a>
-        }
+<header class="bg-white border-bottom">
+    <div class="container-fluid px-4 px-xl-5 py-3">
+        <div class="site-header d-flex flex-column flex-lg-row align-items-center justify-content-between gap-3" dir="ltr">
+            <nav class="header-actions d-flex align-items-center gap-2" aria-label="פעולות חשבון" dir="ltr">
+                @if (IsRegister)
+                {
+                    <a class="btn btn-outline-primary" href="/signin">התחברות</a>
+                    <a class="btn btn-primary" href="/register">הרשמה למערכת</a>
+                }
+                else
+                {
+                    <a class="btn btn-primary" href="/register">הרשמה למערכת</a>
+                    <a class="btn btn-outline-primary" href="/signin">התחברות</a>
+                }
+            </nav>
+
+            <nav class="main-nav nav align-items-center justify-content-center gap-2 gap-xl-3" aria-label="ניווט ראשי" dir="ltr">
+                <a class="nav-link" href="/#audience">למי זה מתאים</a>
+                <a class="nav-link" href="/#how-it-works">איך זה עובד</a>
+                <a class="nav-link" href="/#capabilities">מה אפשר לעשות</a>
+            </nav>
+
+            <a class="brand d-flex align-items-center gap-2 text-decoration-none" href="/" aria-label="עיר בקשר — דף הבית" dir="ltr">
+                <span>עיר בקשר</span>
+                <span class="brand-mark rounded-3 d-inline-flex align-items-center justify-content-center">
+                    <img src="@BrandAsset" alt="" />
+                </span>
+            </a>
+        </div>
     </div>
-
-    <nav class="main-nav" aria-label="ניווט ראשי" dir="rtl">
-        <a href="/#audience">למי זה מתאים</a>
-        <a href="/#how-it-works">איך זה עובד</a>
-        <a href="/#capabilities">מה אפשר לעשות</a>
-    </nav>
-
-    <a class="brand" href="/" aria-label="עיר בקשר — דף הבית" dir="rtl">
-        <span>עיר בקשר</span>
-        <span class="brand-mark"><img src="@BrandAsset" alt="" /></span>
-    </a>
 </header>
 
 @code {
     [Parameter] public bool IsRegister { get; set; }
 
-    private string BrandAsset => Navigation.Uri.Contains("/register", StringComparison.OrdinalIgnoreCase)
-        ? "/assets/brand-register.svg"
-        : Navigation.Uri.Contains("/signin", StringComparison.OrdinalIgnoreCase)
-            ? "/assets/brand-signin.svg"
-            : "/assets/brand-landing.svg";
+    private string BrandAsset
+    {
+        get
+        {
+            if (Navigation.Uri.Contains("/register", StringComparison.OrdinalIgnoreCase))
+                return "/assets/brand-register.svg";
+
+            if (Navigation.Uri.Contains("/signin", StringComparison.OrdinalIgnoreCase))
+                return "/assets/brand-signin.svg";
+
+            return "/assets/brand-landing.svg";
+        }
+    }
 }

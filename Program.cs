@@ -1,22 +1,9 @@
 using MunicipalityWeb.Components;
-using MunicipalityWeb.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-builder.Services.AddRazorComponents()
-    .AddInteractiveServerComponents();
-
-var apiBaseUrl = builder.Configuration["Api:BaseUrl"] ?? "http://localhost:5233/";
-if (!apiBaseUrl.EndsWith('/'))
-    apiBaseUrl += "/";
-
-builder.Services.AddHttpClient("MunicipalityApi", client =>
-{
-    client.BaseAddress = new Uri(apiBaseUrl);
-    client.Timeout = TimeSpan.FromSeconds(15);
-});
-builder.Services.AddScoped<UsersApiClient>();
+builder.Services.AddRazorComponents();
 
 var app = builder.Build();
 
@@ -33,7 +20,6 @@ app.UseHttpsRedirection();
 app.UseAntiforgery();
 
 app.MapStaticAssets();
-app.MapRazorComponents<App>()
-    .AddInteractiveServerRenderMode();
+app.MapRazorComponents<App>();
 
 app.Run();

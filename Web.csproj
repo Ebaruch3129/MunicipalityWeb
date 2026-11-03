@@ -10,7 +10,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Model\Model.csproj" />
+    <Compile Remove="API/**/*.cs;DAL/**/*.cs;Model/**/*.cs" />
   </ItemGroup>
 
 </Project>
