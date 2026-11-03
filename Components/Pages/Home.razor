@@ -4,95 +4,69 @@
 <SiteHeader />
 
 <main>
-    <section class="hero-section py-5">
-        <div class="container py-lg-4">
-            <div class="row align-items-center g-5" dir="ltr">
-                <div class="col-lg-6 order-2 order-lg-1">
-                    <CityPreview />
-                </div>
-                <div class="col-lg-6 order-1 order-lg-2" dir="rtl">
-                    <div class="hero-copy">
-                        <span class="badge rounded-pill hero-badge mb-3">העיר שלנו. האחריות של כולנו.</span>
-                        <h1>עיר טובה יותר<br />מתחילה בך.</h1>
-                        <p class="hero-description text-secondary mt-3">מפגע ברחוב? מדווחים בקלות, מסמנים על המפה ועוקבים אחר הטיפול — עד שהבעיה נפתרת.</p>
-                        <div class="hero-actions d-flex flex-wrap gap-3 mt-4">
-                            <a class="btn btn-primary btn-lg" href="/register">מתחילים כאן <span aria-hidden="true">←</span></a>
-                            <a class="btn btn-outline-primary btn-lg" href="#how-it-works">איך זה עובד</a>
-                        </div>
-                        <p class="hero-footnote text-success-emphasis mt-3 mb-0">תמונה, מיקום ותיאור — והפנייה בדרך לעירייה.</p>
-                    </div>
-                </div>
+    <section class="hero-section" dir="ltr">
+        <CityPreview />
+        <div class="hero-copy" dir="rtl">
+            <span class="hero-badge">העיר שלנו. האחריות של כולנו.</span>
+            <h1>עיר טובה יותר<br />מתחילה בך.</h1>
+            <p class="hero-description">מפגע ברחוב? מדווחים בקלות, מסמנים על המפה<br class="desktop-break" /> ועוקבים אחר הטיפול — עד שהבעיה נפתרת.</p>
+            <div class="hero-actions">
+                <a class="button button-primary" href="/register">מתחילים כאן <span aria-hidden="true">←</span></a>
+                <a class="button button-outline" href="#how-it-works">איך זה עובד</a>
             </div>
+            <p class="hero-footnote">תמונה, מיקום ותיאור — והפנייה בדרך לעירייה.</p>
         </div>
     </section>
 
-    <section class="container py-5" id="capabilities" dir="rtl">
-        <h2 class="section-title mb-4">כל מה שצריך כדי להשפיע על הסביבה שלך</h2>
-        <div class="row row-cols-1 row-cols-lg-3 g-3">
-            <div class="col">
-                <article class="card h-100 feature-card feature-green">
-                    <div class="card-body p-4">
-                        <img class="feature-icon mb-3" src="/assets/feature-report.svg" alt="" />
-                        <h3>מדווחים בכמה צעדים</h3>
-                        <p class="text-secondary mb-0">בוחרים סוג תקלה, מוסיפים תיאור ומצרפים תמונה שמסבירה הכול.</p>
-                    </div>
-                </article>
-            </div>
-            <div class="col">
-                <article class="card h-100 feature-card feature-pale">
-                    <div class="card-body p-4">
-                        <img class="feature-icon mb-3" src="/assets/feature-map.svg" alt="" />
-                        <h3>מסמנים בדיוק איפה</h3>
-                        <p class="text-secondary mb-0">בוחרים את מיקום המפגע במפה ועוזרים לצוות להגיע למקום הנכון.</p>
-                    </div>
-                </article>
-            </div>
-            <div class="col">
-                <article class="card h-100 feature-card feature-blue">
-                    <div class="card-body p-4">
-                        <img class="feature-icon mb-3" src="/assets/feature-updates.svg" alt="" />
-                        <h3>נשארים מעודכנים</h3>
-                        <p class="text-secondary mb-0">צופים בסטטוס הפנייה ועוקבים אחר התקדמות הטיפול במקום אחד.</p>
-                    </div>
-                </article>
-            </div>
+    <section class="capabilities section-shell" id="capabilities" dir="rtl">
+        <h2>כל מה שצריך כדי להשפיע על הסביבה שלך</h2>
+        <div class="feature-grid">
+            <article class="feature-card feature-green">
+                <img src="/assets/feature-report.svg" alt="" />
+                <h3>מדווחים בכמה צעדים</h3>
+                <p>בוחרים סוג תקלה, מוסיפים תיאור<br class="desktop-break" /> ומצרפים תמונה שמסבירה הכול.</p>
+            </article>
+            <article class="feature-card feature-green">
+                <img src="/assets/feature-map.svg" alt="" />
+                <h3>מסמנים בדיוק איפה</h3>
+                <p>בוחרים את מיקום המפגע במפה<br class="desktop-break" /> ועוזרים לצוות להגיע למקום הנכון.</p>
+            </article>
+            <article class="feature-card feature-blue">
+                <img src="/assets/feature-updates.svg" alt="" />
+                <h3>נשארים מעודכנים</h3>
+                <p>צופים בסטטוס הפנייה ועוקבים אחר<br class="desktop-break" /> התקדמות הטיפול במקום אחד.</p>
+            </article>
         </div>
     </section>
 
-    <section class="container py-5" id="how-it-works" dir="rtl">
-        <h2 class="section-title mb-4">מהדיווח שלך — לטיפול של העירייה</h2>
-        <div class="row row-cols-1 row-cols-lg-3 g-4">
-            <div class="col">
-                <article class="step-card">
-                    <span class="step-number">01</span>
-                    <h3>מעלים פנייה חדשה</h3>
-                    <p class="text-secondary">נרשמים, מתארים את המפגע ומצרפים תמונה ומיקום.</p>
-                </article>
-            </div>
-            <div class="col">
-                <article class="step-card">
-                    <span class="step-number">02</span>
-                    <h3>העירייה מקבלת ומנתבת</h3>
-                    <p class="text-secondary">הפנייה נבדקת ומועברת למחלקה המתאימה לטיפול.</p>
-                </article>
-            </div>
-            <div class="col">
-                <article class="step-card">
-                    <span class="step-number">03</span>
-                    <h3>עוקבים עד לפתרון</h3>
-                    <p class="text-secondary">הסטטוס מתעדכן, ואתם יודעים מה קורה עם הפנייה שלכם.</p>
-                </article>
-            </div>
+    <section class="how-it-works section-shell" id="how-it-works" dir="rtl">
+        <h2>מהדיווח שלך — לטיפול של העירייה</h2>
+        <div class="steps-grid">
+            <article class="step-card">
+                <span class="step-number">01</span>
+                <h3>מעלים פנייה חדשה</h3>
+                <p>נרשמים, מתארים את המפגע<br /> ומצרפים תמונה ומיקום.</p>
+            </article>
+            <article class="step-card">
+                <span class="step-number">02</span>
+                <h3>העירייה מקבלת ומנתבת</h3>
+                <p>הפנייה נבדקת ומועברת<br /> למחלקה המתאימה לטיפול.</p>
+            </article>
+            <article class="step-card">
+                <span class="step-number">03</span>
+                <h3>עוקבים עד לפתרון</h3>
+                <p>הסטטוס מתעדכן, ואתם יודעים<br /> מה קורה עם הפנייה שלכם.</p>
+            </article>
         </div>
     </section>
 
-    <section class="container pb-5" id="audience" dir="rtl">
-        <div class="closing-card rounded-4 p-4 p-lg-5 d-flex flex-column flex-lg-row align-items-lg-center justify-content-between gap-4">
+    <section class="closing-section" id="audience" dir="ltr">
+        <div class="closing-card" dir="rtl">
             <div>
                 <h2>ביחד, דואגים לעיר שלנו.</h2>
-                <p class="mb-0">פותחים חשבון ומקבלים דרך פשוטה לדווח, לעקוב ולהיות חלק מהשינוי.</p>
+                <p>פותחים חשבון ומקבלים דרך פשוטה לדווח, לעקוב ולהיות חלק מהשינוי.</p>
             </div>
-            <a class="btn btn-light btn-lg flex-shrink-0" href="/register">יוצרים חשבון ומתחילים</a>
+            <a class="button button-light" href="/register">יוצרים חשבון ומתחילים</a>
         </div>
     </section>
 </main>
