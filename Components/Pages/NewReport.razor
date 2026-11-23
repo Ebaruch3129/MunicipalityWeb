@@ -1,0 +1,428 @@
+@page "/reports/new"
+@using System.ComponentModel.DataAnnotations
+@using System.Globalization
+@using System.Net.Http.Headers
+@using Microsoft.AspNetCore.Components.Forms
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject MunicipalityWeb.Services.UserSession UserSession
+
+<PageTitle>פתיחת בקשה | עיר בקשר</PageTitle>
+<SiteHeader />
+
+<main class="report-page container-fluid" dir="rtl">
+    <section class="report-hero">
+        <div class="report-hero-copy">
+            <span class="report-eyebrow">מרכז הדיווחים העירוני</span>
+            <h1>רואים משהו שדורש טיפול?<br />אנחנו כאן כדי לעזור.</h1>
+            <p>מתארים את המפגע, מוסיפים תמונה ומיקום — והבקשה מגיעה לנציגות העירייה לטיפול.</p>
+            <a class="btn button button-primary report-hero-action" href="#new-report">מתחילים לדווח <span aria-hidden="true">←</span></a>
+        </div>
+        <div class="report-hero-art" aria-hidden="true">
+            <img src="/assets/map-register.svg" alt="" />
+            <span class="hero-map-pin pin-a"></span>
+            <span class="hero-map-pin pin-b"></span>
+            <span class="hero-map-tag">העיר שלך, בתמונה אחת</span>
+        </div>
+    </section>
+
+    <section class="report-steps" aria-label="איך מגישים בקשה">
+        <article class="report-step-card">
+            <span class="report-step-number">01</span>
+            <div>
+                <h2>מתארים את הבעיה</h2>
+                <p>בוחרים נושא ומספרים בקצרה מה קרה.</p>
+            </div>
+        </article>
+        <article class="report-step-card">
+            <span class="report-step-number">02</span>
+            <div>
+                <h2>מוסיפים תמונה ומיקום</h2>
+                <p>תמונה וכתובת עוזרות לצוות להבין לאן להגיע.</p>
+            </div>
+        </article>
+        <article class="report-step-card">
+            <span class="report-step-number">03</span>
+            <div>
+                <h2>עוקבים אחר הטיפול</h2>
+                <p>הבקשה מקבלת מספר ומתחילה את דרכה לטיפול.</p>
+            </div>
+        </article>
+    </section>
+
+    <section class="report-workspace" id="new-report">
+        <section class="auth-card report-form-card">
+            <div class="card-heading report-card-heading">
+                <span class="report-eyebrow">בקשה חדשה</span>
+                <h2>ספרו לנו מה צריך לתקן</h2>
+                <p>ככל שהפרטים מדויקים יותר, כך נוכל לעזור מהר יותר.</p>
+            </div>
+
+            <EditForm Model="Form" OnValidSubmit="SubmitReportAsync" class="auth-form report-form">
+                <DataAnnotationsValidator />
+
+                <div class="report-form-grid">
+                    <div class="form-field">
+                        <label for="report-title">כותרת הבקשה</label>
+                        <InputText class="form-control" id="report-title" @bind-Value="Form.Title" placeholder="למשל: פנס רחוב לא עובד" />
+                        <ValidationMessage For="() => Form.Title" />
+                    </div>
+                    <div class="form-field">
+                        <label for="report-category">נושא הבקשה</label>
+                        <InputSelect class="form-control" id="report-category" @bind-Value="Form.CategoryName">
+                            <option value="">בחרו נושא</option>
+                            <option value="תאורה">תאורה</option>
+                            <option value="כבישים ומדרכות">כבישים ומדרכות</option>
+                            <option value="ניקיון">ניקיון</option>
+                            <option value="גינון">גינון</option>
+                            <option value="ריהוט רחוב">ריהוט רחוב</option>
+                            <option value="אחר">אחר</option>
+                        </InputSelect>
+                        <ValidationMessage For="() => Form.CategoryName" />
+                    </div>
+                </div>
+
+                <div class="form-field">
+                    <label for="report-description">תיאור הבקשה</label>
+                    <InputTextArea class="form-control report-textarea" id="report-description" @bind-Value="Form.Description" placeholder="מה קרה? ממתי המפגע קיים? כל פרט יכול לעזור." />
+                    <ValidationMessage For="() => Form.Description" />
+                </div>
+
+                <div class="form-field">
+                    <label for="report-address">כתובת או נקודת ציון</label>
+                    <InputText class="form-control" id="report-address" @bind-Value="Form.Address" placeholder="רחוב, מספר בית או נקודת ציון קרובה" />
+                    <ValidationMessage For="() => Form.Address" />
+                </div>
+
+                <div class="report-location-box">
+                    <div class="report-location-heading">
+                        <div>
+                            <strong>מיקום מדויק במפה</strong>
+                            <span>אפשר לאתר את המיקום הנוכחי או להזין קואורדינטות.</span>
+                        </div>
+                        <button class="btn button button-outline location-button" type="button" @onclick="GetCurrentLocationAsync" disabled="@IsLocating">
+                            @(IsLocating ? "מאתרים…" : "איתור המיקום שלי")
+                        </button>
+                    </div>
+                    <div class="report-form-grid location-coordinates">
+                        <div class="form-field">
+                            <label for="report-latitude">קו רוחב</label>
+                            <InputNumber class="form-control" id="report-latitude" @bind-Value="Form.Latitude" placeholder="31.7683" />
+                        </div>
+                        <div class="form-field">
+                            <label for="report-longitude">קו אורך</label>
+                            <InputNumber class="form-control" id="report-longitude" @bind-Value="Form.Longitude" placeholder="35.2137" />
+                        </div>
+                    </div>
+                    @if (!string.IsNullOrWhiteSpace(MapEmbedUrl))
+                    {
+                        <div class="report-map-preview">
+                            <iframe title="תצוגת מיקום ב-Google Maps"
+                                    src="@MapEmbedUrl"
+                                    loading="lazy"
+                                    referrerpolicy="no-referrer-when-downgrade"
+                                    allowfullscreen></iframe>
+                            <div class="report-map-footer">
+                                <span>@MapCaption</span>
+                                <a href="@GoogleMapsUrl" target="_blank" rel="noopener noreferrer">פתיחה ב-Google Maps</a>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="report-map-placeholder">המפה תוצג לאחר הזנת כתובת או איתור מיקום.</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(LocationMessage))
+                    {
+                        <p class="location-message" role="status">@LocationMessage</p>
+                    }
+                </div>
+
+                <div class="form-field">
+                    <label for="report-image">תמונה (חובה)</label>
+                    <InputFile id="report-image" OnChange="ImageSelectedAsync" accept="image/jpeg,image/png,image/webp" class="report-file-input" required />
+                    <span class="report-field-hint">אפשר להעלות תמונת JPG, PNG או WEBP, עד 5MB.</span>
+                    @if (!string.IsNullOrWhiteSpace(ImageMessage))
+                    {
+                        <p class="location-message" role="status">@ImageMessage</p>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(ImagePreview))
+                    {
+                        <div class="report-image-preview">
+                            <img src="@ImagePreview" alt="תצוגה מקדימה של התמונה שנבחרה" />
+                            <span>@SelectedImageName</span>
+                        </div>
+                    }
+                </div>
+
+                @if (!string.IsNullOrWhiteSpace(ResultMessage))
+                {
+                    <p class="form-result @(Succeeded ? "success" : "error")" role="status">@ResultMessage</p>
+                }
+                @if (Succeeded)
+                {
+                    <a class="btn button button-outline" href="/reports/mine">צפייה בפניות שלי ובסטטוס שלהן</a>
+                }
+
+                <div class="report-submit-row">
+                    <p>הפרטים ישמשו לטיפול בבקשה וליצירת קשר במידת הצורך.</p>
+                    <button class="btn button button-primary report-submit-button" type="submit" disabled="@IsBusy">
+                        @(IsBusy ? "שולחים את הבקשה…" : "שליחת הבקשה")
+                    </button>
+                </div>
+            </EditForm>
+        </section>
+
+        <aside class="report-example-column">
+            <section class="report-example-card">
+                <div class="report-example-title">
+                    <span class="example-badge">דוגמה</span>
+                    <span>כך נראית בקשה ברורה</span>
+                </div>
+                <div class="report-example-map">
+                    <img src="/assets/map-landing.svg" alt="מפת רחובות לדוגמה" />
+                    <img class="example-map-pin" src="/assets/pin-primary.svg" alt="" />
+                    <span class="example-map-label">רחוב הגפן</span>
+                </div>
+                <div class="example-report-copy">
+                    <div class="example-report-heading">
+                        <strong>פנס רחוב לא עובד</strong>
+                        <span class="status-badge">התקבלה</span>
+                    </div>
+                    <p>רחוב הגפן 12 · תאורה</p>
+                    <p class="example-description">"הפנס מול הכניסה לבניין לא נדלק כבר כמה ערבים."</p>
+                </div>
+            </section>
+
+            <section class="report-tips-card">
+                <h2>טיפ קטן לפני השליחה</h2>
+                <ul>
+                    <li>תארו מה רואים, בלי פרטים אישיים של אנשים.</li>
+                    <li>הוסיפו תמונה שמראה את המפגע בבירור.</li>
+                    <li>ציינו כתובת או השתמשו באיתור המיקום.</li>
+                </ul>
+            </section>
+        </aside>
+    </section>
+</main>
+
+@code {
+    private const long MaximumImageSize = 5 * 1024 * 1024;
+    private ReportForm Form { get; set; } = new ReportForm();
+    private IBrowserFile? SelectedImage;
+    private string? SelectedImageName;
+    private string? ImagePreview;
+    private string? ImageMessage;
+    private string? LocationMessage;
+    private string? ResultMessage;
+    private bool IsBusy;
+    private bool IsLocating;
+    private bool Succeeded;
+
+    private string MapQuery
+    {
+        get
+        {
+            if (Form.Latitude.HasValue && Form.Longitude.HasValue)
+            {
+                return Form.Latitude.Value.ToString(CultureInfo.InvariantCulture) + "," +
+                       Form.Longitude.Value.ToString(CultureInfo.InvariantCulture);
+            }
+
+            return Form.Address.Trim();
+        }
+    }
+
+    private string MapEmbedUrl => string.IsNullOrWhiteSpace(MapQuery)
+        ? string.Empty
+        : "https://maps.google.com/maps?q=" + Uri.EscapeDataString(MapQuery) + "&z=16&output=embed";
+
+    private string GoogleMapsUrl => string.IsNullOrWhiteSpace(MapQuery)
+        ? string.Empty
+        : "https://www.google.com/maps/search/?api=1&query=" + Uri.EscapeDataString(MapQuery);
+
+    private string MapCaption => Form.Latitude.HasValue && Form.Longitude.HasValue
+        ? "המפה מציגה את הקואורדינטות שנבחרו."
+        : "המפה מציגה תוצאה לפי הכתובת שהוזנה.";
+
+    protected override void OnInitialized()
+    {
+        if (!UserSession.IsSignedIn || UserSession.IsAdmin)
+        {
+            Navigation.NavigateTo(UserSession.IsAdmin ? "/admin/open" : "/signin");
+        }
+    }
+
+    private async Task ImageSelectedAsync(InputFileChangeEventArgs args)
+    {
+        ImageMessage = null;
+        ImagePreview = null;
+        SelectedImage = null;
+        SelectedImageName = null;
+
+        IBrowserFile image = args.File;
+        if (image.Size > MaximumImageSize)
+        {
+            ImageMessage = "התמונה גדולה מ־5MB. בחרו תמונה קטנה יותר.";
+            return;
+        }
+
+        if (!image.ContentType.StartsWith("image/", StringComparison.OrdinalIgnoreCase))
+        {
+            ImageMessage = "אפשר לבחור קובץ תמונה בלבד.";
+            return;
+        }
+
+        try
+        {
+            using Stream stream = image.OpenReadStream(MaximumImageSize);
+            using MemoryStream memory = new MemoryStream();
+            await stream.CopyToAsync(memory);
+            ImagePreview = "data:" + image.ContentType + ";base64," + Convert.ToBase64String(memory.ToArray());
+            SelectedImage = image;
+            SelectedImageName = image.Name;
+        }
+        catch (IOException)
+        {
+            ImageMessage = "לא הצלחנו לקרוא את התמונה. נסו לבחור אותה שוב.";
+        }
+    }
+
+    private async Task GetCurrentLocationAsync()
+    {
+        IsLocating = true;
+        LocationMessage = null;
+        try
+        {
+            BrowserLocation location = await JS.InvokeAsync<BrowserLocation>("municipalityLocation.getCurrentPosition");
+            Form.Latitude = (decimal)location.Latitude;
+            Form.Longitude = (decimal)location.Longitude;
+            LocationMessage = "המיקום נוסף לבקשה.";
+        }
+        catch (JSException)
+        {
+            LocationMessage = "לא הצלחנו לאתר את המיקום. אפשר להזין את הקואורדינטות ידנית.";
+        }
+        finally
+        {
+            IsLocating = false;
+        }
+    }
+
+    private async Task SubmitReportAsync()
+    {
+        Succeeded = false;
+        ResultMessage = null;
+
+        if (!UserSession.IsSignedIn)
+        {
+            Navigation.NavigateTo("/signin");
+            return;
+        }
+
+        if (Form.Latitude.HasValue != Form.Longitude.HasValue)
+        {
+            ResultMessage = "כדי לצרף מיקום, יש למלא גם קו רוחב וגם קו אורך.";
+            return;
+        }
+
+        if (SelectedImage == null || SelectedImage.Size == 0)
+        {
+            ResultMessage = "יש לצרף תמונה לפני שליחת הפנייה.";
+            return;
+        }
+
+        IsBusy = true;
+        try
+        {
+            using MultipartFormDataContent content = new MultipartFormDataContent();
+            AddFormValue(content, "UserId", UserSession.UserId.ToString(CultureInfo.InvariantCulture));
+            AddFormValue(content, "Title", Form.Title.Trim());
+            AddFormValue(content, "Description", Form.Description.Trim());
+            AddFormValue(content, "Address", Form.Address.Trim());
+            AddFormValue(content, "CategoryName", Form.CategoryName);
+            if (Form.Latitude.HasValue && Form.Longitude.HasValue)
+            {
+                AddFormValue(content, "Latitude", Form.Latitude.Value.ToString(CultureInfo.InvariantCulture));
+                AddFormValue(content, "Longitude", Form.Longitude.Value.ToString(CultureInfo.InvariantCulture));
+            }
+
+            if (SelectedImage != null)
+            {
+                StreamContent imageContent = new StreamContent(SelectedImage.OpenReadStream(MaximumImageSize));
+                imageContent.Headers.ContentType = new MediaTypeHeaderValue(SelectedImage.ContentType);
+                content.Add(imageContent, "Image", SelectedImage.Name);
+            }
+
+            using HttpResponseMessage response = await Http.PostAsync("api/reports", content);
+            if (response.StatusCode == System.Net.HttpStatusCode.Created)
+            {
+                ReportCreatedResponse? created = await response.Content.ReadFromJsonAsync<ReportCreatedResponse>();
+                Succeeded = true;
+                ResultMessage = created == null
+                    ? "הבקשה נשלחה לנציגות העירייה."
+                    : "הבקשה נשלחה בהצלחה. מספר הבקשה שלך: " + created.Id.ToString(CultureInfo.InvariantCulture) + ".";
+                Form = new ReportForm();
+                SelectedImage = null;
+                SelectedImageName = null;
+                ImagePreview = null;
+            }
+            else
+            {
+                string apiMessage = await response.Content.ReadAsStringAsync();
+                ResultMessage = string.IsNullOrWhiteSpace(apiMessage)
+                    ? "לא הצלחנו לשלוח את הבקשה. בדקו את הפרטים ונסו שוב."
+                    : apiMessage.Trim().Trim('"');
+            }
+        }
+        catch (HttpRequestException)
+        {
+            ResultMessage = "לא הצלחנו להתחבר לשרת. בדקו שה־API פועל ונסו שוב.";
+        }
+        catch (TaskCanceledException)
+        {
+            ResultMessage = "השרת לא הגיב בזמן. נסו לשלוח שוב בעוד רגע.";
+        }
+        finally
+        {
+            IsBusy = false;
+        }
+    }
+
+    private static void AddFormValue(MultipartFormDataContent content, string name, string value)
+    {
+        content.Add(new StringContent(value), name);
+    }
+
+    private class ReportForm
+    {
+        [Required(ErrorMessage = "יש להזין כותרת לבקשה.")]
+        [StringLength(150, ErrorMessage = "הכותרת יכולה להכיל עד 150 תווים.")]
+        public string Title { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "יש לבחור נושא.")]
+        public string CategoryName { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "יש לתאר את הבקשה.")]
+        [MinLength(10, ErrorMessage = "התיאור צריך להכיל לפחות 10 תווים.")]
+        public string Description { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "יש להזין כתובת או נקודת ציון.")]
+        public string Address { get; set; } = string.Empty;
+
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
+    }
+
+    private class BrowserLocation
+    {
+        public double Latitude { get; set; }
+        public double Longitude { get; set; }
+    }
+
+    private class ReportCreatedResponse
+    {
+        public int Id { get; set; }
+    }
+}

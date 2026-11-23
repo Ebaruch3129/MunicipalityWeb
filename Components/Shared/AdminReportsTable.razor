@@ -1,0 +1,123 @@
+@using System.Net.Http.Json
+@using Model
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject MunicipalityWeb.Services.UserSession UserSession
+
+<div class="container py-5 report-list-page" dir="rtl">
+    <div class="mb-4"><span class="report-eyebrow">ניהול עירוני</span><h1 class="h2 mt-2">@Heading</h1><p class="text-secondary">צפייה בפרטי הפנייה, בפרטי התושב ובסטטוס הטיפול.</p></div>
+    @if (Loading)
+    {
+        <p class="text-secondary">טוענים פניות…</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="alert alert-danger">@ErrorMessage</div>
+    }
+    else if (Reports.Count == 0)
+    {
+        <div class="alert alert-light border">אין פניות להצגה.</div>
+    }
+    else
+    {
+        <div class="report-cards">
+            @foreach (ReportRecord report in Reports)
+            {
+                <article class="report-record-card" id="report-@report.Id">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div><span class="small text-secondary">פנייה #@report.Id · @report.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span><h2 class="h5 mt-2">@report.Title</h2></div>
+                        <span class="badge rounded-pill @StatusClass(report.Status)">@StatusText(report.Status)</span>
+                    </div>
+                    <p>@report.Description</p>
+                    <div class="small text-secondary mb-2">@report.CategoryName · @report.Address</div>
+                    <div class="small mb-3"><strong>תושב:</strong> @report.UserName · <a href="mailto:@report.UserEmail">@report.UserEmail</a></div>
+                    @if (report.Latitude.HasValue && report.Longitude.HasValue)
+                    {
+                        <a class="small" target="_blank" rel="noopener noreferrer" href="https://www.google.com/maps/search/?api=1&query=@report.Latitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),@report.Longitude.Value.ToString(System.Globalization.CultureInfo.InvariantCulture)">פתיחת המיקום ב־Google Maps</a>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(report.ImageUrl))
+                    {
+                        <div class="mt-3"><a href="@ImageHref(report.ImageUrl)" target="_blank" rel="noopener noreferrer"><img class="admin-report-image" src="@ImageHref(report.ImageUrl)" alt="תמונה שצורפה לפנייה" /></a></div>
+                    }
+                    @if (!string.IsNullOrWhiteSpace(report.StatusNote))
+                    {
+                        <div class="alert alert-info mt-3 mb-0">עדכון אחרון: @report.StatusNote</div>
+                    }
+                    @if (report.Status != "Resolved" && report.Status != "Closed")
+                    {
+                        <button class="btn button button-primary mt-3" disabled="@Saving" @onclick="() => ResolveAsync(report.Id)">סגירת פנייה ושליחת עדכון למשתמש</button>
+                    }
+                </article>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public bool OpenOnly { get; set; }
+    [Parameter] public string Heading { get; set; } = "כל הפניות";
+    private List<ReportRecord> Reports { get; set; } = new List<ReportRecord>();
+    private bool Loading = true;
+    private bool Saving;
+    private string? ErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!UserSession.IsSignedIn || !UserSession.IsAdmin)
+        {
+            Navigation.NavigateTo(UserSession.IsSignedIn ? "/reports/new" : "/signin");
+            return;
+        }
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        Loading = true;
+        ErrorMessage = null;
+        try
+        {
+            string endpoint = OpenOnly ? "api/reports/admin/open" : "api/reports/admin/all";
+            Reports = await Http.GetFromJsonAsync<List<ReportRecord>>($"{endpoint}?adminId={UserSession.UserId}") ?? new List<ReportRecord>();
+        }
+        catch (HttpRequestException) { ErrorMessage = "לא הצלחנו לטעון את הפניות. בדקו שהשרת פעיל ונסו שוב."; }
+        finally { Loading = false; }
+    }
+
+    private async Task ResolveAsync(int reportId)
+    {
+        Saving = true;
+        try
+        {
+            using HttpResponseMessage response = await Http.PostAsync($"api/reports/admin/{reportId}/resolve?adminId={UserSession.UserId}", null);
+            if (!response.IsSuccessStatusCode)
+            {
+                ErrorMessage = "לא הצלחנו לסגור את הפנייה. ייתכן שהיא כבר נסגרה.";
+                return;
+            }
+            await LoadAsync();
+        }
+        catch (HttpRequestException) { ErrorMessage = "לא הצלחנו להתחבר לשרת."; }
+        finally { Saving = false; }
+    }
+
+    private string ImageHref(string path) => Uri.TryCreate(path, UriKind.Absolute, out Uri? absolute)
+        ? absolute.AbsoluteUri
+        : new Uri(Http.BaseAddress!, path.TrimStart('/')).AbsoluteUri;
+
+    private static string StatusText(string status)
+    {
+        if (status == "Received") return "התקבלה";
+        if (status == "InProgress") return "בטיפול";
+        if (status == "Resolved") return "סודרה";
+        if (status == "Closed") return "נסגרה";
+        return status;
+    }
+
+    private static string StatusClass(string status)
+    {
+        if (status == "Resolved" || status == "Closed") return "text-bg-success";
+        if (status == "InProgress") return "text-bg-primary";
+        return "text-bg-warning";
+    }
+}

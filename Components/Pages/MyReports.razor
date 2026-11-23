@@ -1,0 +1,92 @@
+@page "/reports/mine"
+@using System.Net.Http.Json
+@using Model
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject MunicipalityWeb.Services.UserSession UserSession
+
+<PageTitle>הפניות שלי | עיר בקשר</PageTitle>
+<SiteHeader />
+
+<main class="container py-5 report-list-page" dir="rtl">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-4">
+        <div><span class="report-eyebrow">האזור האישי</span><h1 class="h2 mt-2">הפניות שלי</h1><p class="text-secondary mb-0">כאן אפשר לראות פניות פעילות ועדכונים על טיפול בהן.</p></div>
+        <a class="btn button button-primary" href="/reports/new">פתיחת פנייה חדשה</a>
+    </div>
+    @if (Loading)
+    {
+        <p class="text-secondary">טוענים את הפניות…</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="alert alert-danger">@ErrorMessage</div>
+    }
+    else if (Reports.Count == 0)
+    {
+        <div class="alert alert-light border">עדיין לא שלחת פניות.</div>
+    }
+    else
+    {
+        <div class="report-cards">
+            @foreach (ReportRecord report in Reports)
+            {
+                <article class="report-record-card">
+                    <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div><span class="small text-secondary">פנייה #@report.Id · @report.CreatedAt.ToString("dd/MM/yyyy HH:mm")</span><h2 class="h5 mt-2">@report.Title</h2></div>
+                        <span class="badge rounded-pill @StatusClass(report.Status)">@StatusText(report.Status)</span>
+                    </div>
+                    <p class="mb-2">@report.Description</p>
+                    <div class="small text-secondary">@report.CategoryName · @report.Address</div>
+                    @if (!string.IsNullOrWhiteSpace(report.StatusNote))
+                    {
+                        <div class="alert alert-success mt-3 mb-0">עדכון מהעירייה: @report.StatusNote</div>
+                    }
+                    @if (report.Status == "Resolved" || report.Status == "Closed")
+                    {
+                        <p class="small text-success mt-3 mb-0">הפנייה סודרה; היא אינה נחשבת עוד כפנייה פעילה.</p>
+                    }
+                </article>
+            }
+        </div>
+    }
+</main>
+
+@code {
+    private List<ReportRecord> Reports { get; set; } = new List<ReportRecord>();
+    private bool Loading = true;
+    private string? ErrorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!UserSession.IsSignedIn || UserSession.IsAdmin)
+        {
+            Navigation.NavigateTo(UserSession.IsAdmin ? "/admin/open" : "/signin");
+            return;
+        }
+        try
+        {
+            Reports = await Http.GetFromJsonAsync<List<ReportRecord>>($"api/reports/mine/{UserSession.UserId}") ?? new List<ReportRecord>();
+        }
+        catch (HttpRequestException)
+        {
+            ErrorMessage = "לא הצלחנו לטעון את הפניות. בדקו שהשרת פעיל ונסו שוב.";
+        }
+        finally { Loading = false; }
+    }
+
+    private static string StatusText(string status)
+    {
+        if (status == "Received") return "התקבלה";
+        if (status == "InProgress") return "בטיפול";
+        if (status == "Resolved") return "סודרה";
+        if (status == "Closed") return "נסגרה";
+        return status;
+    }
+
+    private static string StatusClass(string status)
+    {
+        if (status == "Resolved" || status == "Closed") return "text-bg-success";
+        if (status == "InProgress") return "text-bg-primary";
+        return "text-bg-warning";
+    }
+}

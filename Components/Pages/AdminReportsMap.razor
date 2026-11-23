@@ -1,0 +1,63 @@
+@page "/admin/map"
+@using System.Net.Http.Json
+@using Model
+@inject HttpClient Http
+@inject IJSRuntime JS
+@inject NavigationManager Navigation
+@inject MunicipalityWeb.Services.UserSession UserSession
+
+<PageTitle>מפת פניות | ניהול עיר בקשר</PageTitle>
+<SiteHeader />
+<main class="container py-5 report-list-page" dir="rtl">
+    <div class="mb-4"><span class="report-eyebrow">ניהול עירוני</span><h1 class="h2 mt-2">מפת פניות פתוחות</h1><p class="text-secondary">כל נקודה מייצגת פנייה עם קואורדינטות. לחיצה עליה מציגה את פרטי הפנייה.</p></div>
+    @if (!string.IsNullOrWhiteSpace(ErrorMessage))
+    {
+        <div class="alert alert-danger">@ErrorMessage</div>
+    }
+    else if (Loading)
+    {
+        <p>טוענים את הפניות…</p>
+    }
+    else
+    {
+        <div id="admin-reports-map" class="admin-reports-map" aria-label="מפת פניות פתוחות"></div>
+        <div class="small text-secondary mt-2">@MappedCount מתוך @Reports.Count פניות כוללות מיקום.</div>
+        @if (MappedCount == 0)
+        {
+            <div class="alert alert-light border mt-3">אין כרגע פניות פתוחות עם קואורדינטות.</div>
+        }
+    }
+</main>
+
+@code {
+    private List<ReportRecord> Reports = new List<ReportRecord>();
+    private bool Loading = true;
+    private string? ErrorMessage;
+    private bool MapRendered;
+    private int MappedCount => Reports.FindAll(report => report.Latitude.HasValue && report.Longitude.HasValue).Count;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (!UserSession.IsSignedIn || !UserSession.IsAdmin)
+        {
+            Navigation.NavigateTo(UserSession.IsSignedIn ? "/reports/new" : "/signin");
+            return;
+        }
+        try
+        {
+            Reports = await Http.GetFromJsonAsync<List<ReportRecord>>($"api/reports/admin/open?adminId={UserSession.UserId}") ?? new List<ReportRecord>();
+        }
+        catch (HttpRequestException) { ErrorMessage = "לא הצלחנו לטעון את המפה. בדקו שהשרת פעיל ונסו שוב."; }
+        finally { Loading = false; }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!Loading && ErrorMessage == null && !MapRendered)
+        {
+            MapRendered = true;
+            await JS.InvokeVoidAsync("municipalityReportsMap.render", Reports);
+        }
+    }
+
+}

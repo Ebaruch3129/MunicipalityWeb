@@ -1,0 +1,15 @@
+[
+  {
+    "Name": "API and Web",
+    "Projects": [
+      {
+        "Path": "API/API.csproj",
+        "Action": "Start"
+      },
+      {
+        "Path": "Web.csproj",
+        "Action": "Start"
+      }
+    ]
+  }
+]

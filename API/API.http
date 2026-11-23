@@ -1,0 +1,64 @@
+@API_HostAddress = http://localhost:5233
+@TestUsername = citizen-test-20261109
+@TestEmail = citizen-test-20261109@example.com
+@TestEmailEncoded = citizen-test-20261109%40example.com
+@TestPassword = ExamplePass123!
+@MissingUserId = 99999999
+
+### קבלת כל המשתמשים
+GET {{API_HostAddress}}/api/users
+Accept: application/json
+
+### קבלת משתמש לפי מזהה (כאן נבדקת תשובת Not Found)
+GET {{API_HostAddress}}/api/users/{{MissingUserId}}
+Accept: application/json
+
+### בדיקת שם משתמש
+GET {{API_HostAddress}}/api/users/exists/{{TestUsername}}
+Accept: application/json
+
+### בדיקת כתובת אימייל
+GET {{API_HostAddress}}/api/users/email-exists/{{TestEmailEncoded}}
+Accept: application/json
+
+### ספירת משתמשים לפי תפקיד
+GET {{API_HostAddress}}/api/users/count-by-role
+Accept: application/json
+
+### הרשמת משתמש בדיקה (הריצו פעם אחת, או שנו את הפרטים להרצה נוספת)
+POST {{API_HostAddress}}/api/users?roleName=Resident
+Content-Type: application/json
+
+{
+  "fullName": "Test Resident",
+  "username": "{{TestUsername}}",
+  "email": "{{TestEmail}}",
+  "password": "{{TestPassword}}"
+}
+
+### התחברות עם המשתמש שנוצר למעלה (השרת בודק לפי אימייל)
+POST {{API_HostAddress}}/api/users/login
+Content-Type: application/json
+
+{
+  "email": "{{TestEmail}}",
+  "password": "{{TestPassword}}"
+}
+
+### שינוי תפקיד (משתמש במזהה חסר כדי לא לשנות משתמש אמיתי)
+PUT {{API_HostAddress}}/api/users/{{MissingUserId}}/role?roleName=MunicipalityStaff
+
+### שינוי סיסמה (משתמש במזהה חסר)
+PUT {{API_HostAddress}}/api/users/{{MissingUserId}}/password
+Content-Type: application/json
+
+"NewPass123!"
+
+### שינוי אימייל (משתמש במזהה חסר)
+PUT {{API_HostAddress}}/api/users/{{MissingUserId}}/email
+Content-Type: application/json
+
+"updated-citizen@example.com"
+
+### מחיקת משתמש (משתמש במזהה חסר כדי לא למחוק משתמש אמיתי)
+DELETE {{API_HostAddress}}/api/users/{{MissingUserId}}

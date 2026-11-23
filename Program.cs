@@ -6,17 +6,21 @@ var builder = WebApplication.CreateBuilder(args);
 // Add services to the container.
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
+builder.Services.AddScoped<UserSession>();
 
-var apiBaseUrl = builder.Configuration["Api:BaseUrl"] ?? "http://localhost:5233/";
-if (!apiBaseUrl.EndsWith('/'))
-    apiBaseUrl += "/";
-
-builder.Services.AddHttpClient("MunicipalityApi", client =>
+string apiBaseUrl = builder.Configuration["Api:BaseUrl"] ?? "http://localhost:5233/";
+if (!apiBaseUrl.EndsWith("/"))
 {
-    client.BaseAddress = new Uri(apiBaseUrl);
-    client.Timeout = TimeSpan.FromSeconds(15);
+    apiBaseUrl += "/";
+}
+
+builder.Services.AddScoped<HttpClient>(serviceProvider =>
+{
+    return new HttpClient
+    {
+        BaseAddress = new Uri(apiBaseUrl)
+    };
 });
-builder.Services.AddScoped<UsersApiClient>();
 
 var app = builder.Build();
 

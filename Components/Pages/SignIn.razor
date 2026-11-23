@@ -1,10 +1,17 @@
 @page "/signin"
-@inject MunicipalityWeb.Services.UsersApiClient UsersApi
+@using System.ComponentModel.DataAnnotations
+@using System.Net
+@using System.Net.Http.Json
+@using System.Net.Http.Headers
+@using Model
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject MunicipalityWeb.Services.UserSession UserSession
 
 <PageTitle>התחברות | עיר בקשר</PageTitle>
 <SiteHeader />
 
-<main class="auth-content sign-in-content" dir="rtl">
+<main class="auth-content sign-in-content container-fluid" dir="rtl">
     <div class="sign-in-layout">
         <section class="auth-intro">
             <h1>התחברות לעיר בקשר</h1>
@@ -17,30 +24,32 @@
                 <p>הזינו את המייל והסיסמה שלכם כדי להמשיך לעבוד עם החשבון שלכם.</p>
             </div>
 
-            <EditForm Model="Form" OnValidSubmit="SubmitAsync" class="auth-form">
+            <EditForm Model="Form" OnValidSubmit="SignInAsync" class="auth-form">
                 <DataAnnotationsValidator />
                 <div class="form-field">
                     <label for="signin-email">כתובת מייל</label>
-                    <InputText id="signin-email" @bind-Value="Form.Email" type="email" autocomplete="email" placeholder="name@example.com" dir="ltr" />
+                    <InputText class="form-control" id="signin-email" @bind-Value="Form.Email" type="email" autocomplete="email" placeholder="name@example.com" dir="ltr" />
                     <ValidationMessage For="() => Form.Email" />
                 </div>
                 <div class="form-field">
                     <label for="signin-password">סיסמה</label>
-                    <InputText id="signin-password" @bind-Value="Form.Password" type="password" autocomplete="current-password" placeholder="••••••••" dir="ltr" />
+                    <InputText class="form-control" id="signin-password" @bind-Value="Form.Password" type="password" autocomplete="current-password" placeholder="••••••••" dir="ltr" />
                     <ValidationMessage For="() => Form.Password" />
                 </div>
                 <div class="form-options">
-                    <button type="button" class="text-action" @onclick="ShowResetNotice">שכחתי סיסמה</button>
+                    <a href="#signin-password" class="text-action">שכחתי סיסמה</a>
                     <label class="remember-option" for="remember-me">
                         <input id="remember-me" type="checkbox" @bind="Form.RememberMe" />
                         <span>זכור אותי</span>
                     </label>
                 </div>
+
                 @if (!string.IsNullOrWhiteSpace(ResultMessage))
                 {
                     <p class="form-result @(Succeeded ? "success" : "error")" role="status">@ResultMessage</p>
                 }
-                <button class="button button-primary submit-button" type="submit" disabled="@IsBusy">
+
+                <button class="btn button button-primary submit-button" type="submit" disabled="@IsBusy">
                     @(IsBusy ? "מתחברים…" : "התחברות")
                 </button>
             </EditForm>
@@ -48,31 +57,62 @@
 
         <div class="account-switch">
             <span>עוד לא רשומים?</span>
-            <a class="button button-outline" href="/register">הרשמה למערכת</a>
+            <a class="btn button button-outline" href="/register">הרשמה למערכת</a>
         </div>
     </div>
 </main>
 
 @code {
-    private SignInForm Form { get; } = new();
+    private SignInForm Form { get; } = new SignInForm();
     private bool IsBusy;
     private bool Succeeded;
     private string? ResultMessage;
 
-    private async Task SubmitAsync()
+    private async Task SignInAsync()
     {
         IsBusy = true;
+        Succeeded = false;
         ResultMessage = null;
+
         try
         {
-            var result = await UsersApi.SignInAsync(Form.Email, Form.Password);
-            Succeeded = result.Succeeded;
-            ResultMessage = result.Message;
+            User credentials = new User();
+            credentials.Email = Form.Email.Trim();
+            credentials.Password = Form.Password;
+
+            using HttpResponseMessage response = await Http.PostAsJsonAsync("api/users/login", credentials);
+            if (response.IsSuccessStatusCode)
+            {
+                SignInResponse? signedInUser = await response.Content.ReadFromJsonAsync<SignInResponse>();
+                if (signedInUser == null)
+                {
+                    ResultMessage = "לא הצלחנו לקרוא את פרטי המשתמש. נסו שוב.";
+                    return;
+                }
+
+                Succeeded = true;
+                UserSession.SignIn(signedInUser.Id, signedInUser.FullName, signedInUser.Email, signedInUser.RoleName, signedInUser.Token);
+                Http.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", signedInUser.Token);
+                Navigation.NavigateTo(signedInUser.RoleName == "Admin" ? "/admin/open" : "/reports/new");
+                return;
+            }
+
+            if (response.StatusCode == HttpStatusCode.Unauthorized)
+            {
+                ResultMessage = "כתובת המייל או הסיסמה אינם נכונים. בדקו את הפרטים ונסו שוב.";
+            }
+            else
+            {
+                ResultMessage = "לא הצלחנו להתחבר כרגע. נסו שוב בעוד רגע.";
+            }
         }
         catch (HttpRequestException)
         {
-            Succeeded = false;
-            ResultMessage = "לא הצלחנו להתחבר לשרת כרגע. בדקו שהשרת פועל ונסו שוב.";
+            ResultMessage = "לא הצלחנו להתחבר לשרת כרגע. בדקו שה־API פועל ונסו שוב.";
+        }
+        catch (TaskCanceledException)
+        {
+            ResultMessage = "השרת לא הגיב בזמן. נסו שוב בעוד רגע.";
         }
         finally
         {
@@ -80,21 +120,24 @@
         }
     }
 
-    private void ShowResetNotice()
+    private class SignInForm
     {
-        Succeeded = false;
-        ResultMessage = "אפשרות איפוס סיסמה עדיין אינה זמינה.";
-    }
-
-    private sealed class SignInForm
-    {
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "יש להזין כתובת מייל.")]
-        [System.ComponentModel.DataAnnotations.EmailAddress(ErrorMessage = "כתובת המייל אינה תקינה.")]
+        [Required(ErrorMessage = "יש להזין כתובת מייל.")]
+        [EmailAddress(ErrorMessage = "כתובת המייל אינה תקינה.")]
         public string Email { get; set; } = string.Empty;
 
-        [System.ComponentModel.DataAnnotations.Required(ErrorMessage = "יש להזין סיסמה.")]
+        [Required(ErrorMessage = "יש להזין סיסמה.")]
         public string Password { get; set; } = string.Empty;
 
         public bool RememberMe { get; set; }
+    }
+
+    private class SignInResponse
+    {
+        public int Id { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string RoleName { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
     }
 }
